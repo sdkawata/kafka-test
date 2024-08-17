@@ -1,32 +1,32 @@
 version: "3"
 services:
-  zookeeper01:
-    image: confluentinc/cp-zookeeper:7.7.0
-    ports:
-      - 2181:2181
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-  broker01:
+  kafka01:
     image: confluentinc/cp-kafka:7.7.0
     ports:
+      # ホストとの通信に使う9092だけをexposeする（29092はbroker間の通信のみに使うので、exposeしない）
       - 9092:9092
-    depends_on:
-      - zookeeper01
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper01:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker01:29092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      # KRaft modeで動かす（zookeeper modeは最新のkafkaでは非推奨っぽい？）
+      KAFKA_NODE_ID: 1
+      # LISTNER_HOSTはホストとの通信用、LISTENER_INTERNALはdocker内通信用
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,LISTENER_INTERNAL:PLAINTEXT,LISTENER_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'LISTENER_INTERNAL://kafka01:29092,LISTENER_HOST://localhost:9092'
+      # 各nodeはbrokerかつcontrollerとしてふるまう
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka01:29093'
+      # kafkaがlistenするポートを記載する（LISTNER_HOSTはlocalhost外からlistenするのでhostnameを指定しない）
+      KAFKA_LISTENERS: 'CONTROLLER://kafka01:29093,LISTENER_INTERNAL://kafka01:29092,LISTENER_HOST://:9092'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'LISTENER_INTERNAL'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
   control-center:
     image: confluentinc/cp-enterprise-control-center:7.7.0
     depends_on:
-      - zookeeper01
-      - broker01
+      - kafka01
     ports:
       - 9021:9021
     environment:
-      CONTROL_CENTER_BOOTSTRAP_SERVERS: broker01:29092
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: kafka01:29092
       PORT: 9021
       CONTROL_CENTER_REPLICATION_FACTOR: 1
