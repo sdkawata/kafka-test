@@ -60,7 +60,15 @@ object Main {
     }
   }
   def main(args: Array[String]): Unit = {
-    produce()
-    consume()
+    if (args.length == 1 && args(0) == "produce") {
+      produce()
+      return
+    } else if (args.length == 1 && args(0) == "consume") {
+      consume()
+      return
+    } else {
+      println("" + args.length)
+      throw new IllegalArgumentException("不正な引数です")
+    }
   }
 }
