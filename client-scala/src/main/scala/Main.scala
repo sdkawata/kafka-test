@@ -19,15 +19,18 @@ object Main {
   implicit def function2Callback(f: (RecordMetadata, Exception) => Unit): Callback = new Callback {
     def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = f(metadata, exception)
   }
+  def bootstrapServersConfig() = {
+    "localhost:9092,localhost:19092,localhost:29092"
+  }
   def produce() = {
     val properties = new Properties()
-    properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+    properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrapServersConfig())
     properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, classOf[StringSerializer].getName())
     properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, classOf[StringSerializer].getName())
 
     val producer = new KafkaProducer[String, String](properties)
     for (i <- 1 to 100) {
-      val producerRecord = new ProducerRecord("test_topic", "key" + i, "value" + i)
+      val producerRecord = new ProducerRecord("test_topic2", "key" + i, "value" + i)
       producer.send(producerRecord, (metadata:RecordMetadata, exception: Exception) => {
         if (exception != null) {
           exception.printStackTrace()
@@ -41,13 +44,13 @@ object Main {
   }
   def consume() = {
     val properties = new Properties()
-    properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+    properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrapServersConfig())
     properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, classOf[StringDeserializer].getName())
     properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, classOf[StringDeserializer].getName())
     properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, UUID.randomUUID().toString())
     properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
     val consumer = new KafkaConsumer(properties)
-    val topics = List("test_topic").asJava
+    val topics = List("test_topic2").asJava
     consumer.subscribe(topics)
     println("start subscribing...")
     var count = 0
