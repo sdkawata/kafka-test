@@ -6,25 +6,22 @@ const kafka = new Kafka({
 })
 
 const producer = kafka.producer({
-  createPartitioner: Partitioners.DefaultPartitioner
+  allowAutoTopicCreation: false,
+  createPartitioner: Partitioners.DefaultPartitioner,
 })
+
 const admin = kafka.admin()
 
 const run = async () => {
-  try {
-    const result = await admin.fetchTopicMetadata({
-      topics: ['test-topic']
-    })
-    console.log(JSON.stringify(result))
-  } catch (e) {
-    console.error(e)
-  }
+  await admin.connect()
+  const topiceResult = await admin.fetchTopicMetadata({ topics: ['test_topic'] })
+  console.log('topic', JSON.stringify(topiceResult))
   await producer.connect()
   console.log('connected')
   const sendResult = await producer.send({
-    topic: 'test-topic',
-    messages: Array.from({length: 5}).map((_, i) => ({
-      value: 'message:' + i,
+    topic: 'test_topic',
+    messages: Array.from({length: 10}).map((_, i) => ({
+      value: 'message_from_js_' + i,
     })),
   })
   console.log('sent', sendResult)

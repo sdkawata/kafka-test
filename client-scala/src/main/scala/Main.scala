@@ -20,7 +20,7 @@ object Main {
     def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = f(metadata, exception)
   }
   def bootstrapServersConfig() = {
-    "localhost:9092,localhost:19092,localhost:29092"
+    "localhost:9092,localhost:9093,localhost:9094"
   }
   def produce() = {
     val properties = new Properties()
@@ -29,8 +29,8 @@ object Main {
     properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, classOf[StringSerializer].getName())
 
     val producer = new KafkaProducer[String, String](properties)
-    for (i <- 1 to 100) {
-      val producerRecord = new ProducerRecord("test_topic2", "key" + i, "value" + i)
+    for (i <- 1 to 10) {
+      val producerRecord = new ProducerRecord("test_topic", "key" + i, "value_from_scala:" + i)
       producer.send(producerRecord, (metadata:RecordMetadata, exception: Exception) => {
         if (exception != null) {
           exception.printStackTrace()
@@ -50,7 +50,7 @@ object Main {
     properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, UUID.randomUUID().toString())
     properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
     val consumer = new KafkaConsumer(properties)
-    val topics = List("test_topic2").asJava
+    val topics = List("test_topic").asJava
     consumer.subscribe(topics)
     println("start subscribing...")
     var count = 0
@@ -62,12 +62,24 @@ object Main {
       }
     }
   }
+  def create() = {
+    val properties = new Properties()
+    properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrapServersConfig())
+    val adminClient = org.apache.kafka.clients.admin.AdminClient.create(properties)
+    val newTopic = new org.apache.kafka.clients.admin.NewTopic("test_topic", 3, 3.toShort)
+    val createTopicsResult = adminClient.createTopics(List(newTopic).asJava)
+    createTopicsResult.all().get()
+    adminClient.close()
+  }
   def main(args: Array[String]): Unit = {
     if (args.length == 1 && args(0) == "produce") {
       produce()
       return
     } else if (args.length == 1 && args(0) == "consume") {
       consume()
+      return
+    } else if (args.length == 1 && args(0) == "create") {
+      create()
       return
     } else {
       println("" + args.length)

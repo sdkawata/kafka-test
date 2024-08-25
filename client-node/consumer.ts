@@ -1,4 +1,4 @@
-import { Kafka, Partitioners } from 'kafkajs';
+import { Kafka } from 'kafkajs';
 
 const kafka = new Kafka({
   clientId: 'my-app',
@@ -15,10 +15,10 @@ const consumer = kafka.consumer({ groupId: 'test-group-' + randStr() })
 
 const run = async () => {
   await consumer.connect()
-  await consumer.subscribe({ topic: 'test-topic', fromBeginning: true})
+  await consumer.subscribe({ topic: 'test_topic', fromBeginning: true})
   await consumer.run({
     eachMessage: async ({topic, partition, message}) => {
-      console.log({partition, value: message.value.toString()})
+      console.log({partition, value: message.value.toString(), offset: message.offset})
     }
   })
 }
