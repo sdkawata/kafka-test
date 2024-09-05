@@ -1,0 +1,1 @@
+insert into sales (sales_time,sales_id,item_id,amount,unit_price) values (now(), 'A006','B006',6, 600);
